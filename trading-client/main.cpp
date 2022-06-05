@@ -1,16 +1,25 @@
+#include <iostream>
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+using namespace std;
+
 #define PORT 8888
 
 int main(int argc, char* argv[]) {
 
+	cout << "1: Read" << endl;
+	cout << "2: Write" << endl;
+
+	// Input
+	int choice;
+	scanf("%d", &choice);
+
 	int sock = 0, valread, client_fd;
 	struct sockaddr_in serv_addr;
-	char* hello = "Hello World";
 	char buffer[1024] = { 0 };
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		printf("\n Socket error \n");
@@ -31,7 +40,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	send(sock, hello, strlen(hello), 0);
+	send(sock, &choice, sizeof(choice), 0);
 	printf("Message sent\n");
 	valread = read(sock, buffer, 1024);
 	printf("%s\n", buffer);
