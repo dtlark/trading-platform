@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 // inet_addr
 #include <arpa/inet.h>
 
@@ -21,15 +22,22 @@ thread readerthreads[100];
 
 int readercount = 0;
 
-void* reader() {
+string message = "Message";
+
+void* reader(int new_socket) {
 	// Lock the semaphore
-	sem_wait(&x);
+	sem_wait(&x); //decrements
 	readercount++;
 	if (readercount == 1)
 		sem_wait(&y);
 	// Unlock the semaphore
-	sem_post(&x);
+	sem_post(&x); //increments
 	cout << readercount << " reader in semaphore" << endl;
+	
+	if(send(new_socket, message.c_str(), strlen(message.c_str()), 0) != strlen(message.c_str())) {
+		perror("send");
+	}
+	
 	sleep(5);
 	// Lock the semaphore
 	sem_wait(&x);
@@ -94,7 +102,7 @@ int main() {
 		recv(newSocket, &choice, sizeof(choice), 0);
 
 		if (choice == 1) {
-			readerthreads[i++] = std::thread(reader);
+			readerthreads[i++] = std::thread(reader, newSocket);
 		}
 		else if (choice == 2) {
 			writerthreads[i++] = std::thread(writer);
