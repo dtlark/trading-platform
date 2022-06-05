@@ -4,19 +4,69 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <string>
 
 using namespace std;
 
 #define PORT 8888
 
+string orderStatus() {
+	cout << "Order Status:" << endl;
+	cout << "--Order ID: ";
+
+	string orderNum;
+	scanf("%s", &orderNum);
+
+	return "status|" + orderNum;
+}
+
+string newOrder() {
+	cout << "New Order:" << endl;
+	cout << "--Price: ";
+	cout << "--Quantity: ";
+	cout << "--Type: ";
+
+	string orderNum;
+	scanf("%s", &orderNum);
+
+	return "new|" + orderNum;
+}
+
+string cancelOrder() {
+	cout << "Cancel:" << endl;
+	cout << "--Order ID: ";
+
+	string orderNum;
+	scanf("%s", &orderNum);
+
+	return "cancel|" + orderNum;
+}
+
 int main(int argc, char* argv[]) {
 
-	cout << "1: Read" << endl;
-	cout << "2: Write" << endl;
+	string message = "";
+
+	cout << "1: Order Status" << endl;
+	cout << "2: New Order" << endl;
+	cout << "3: Cancel Order" << endl;
 
 	// Input
 	int choice;
 	scanf("%d", &choice);
+
+	switch(choice) {
+		case 1:
+			message = orderStatus()
+			break;
+		case 2:
+			message = newOrder()
+			break;
+		case 3:
+			message = cancelOrder()
+			break;
+		default:
+			cout << "Invalid function" << endl;
+	}
 
 	int sock = 0, valread, client_fd;
 	struct sockaddr_in serv_addr;
@@ -40,7 +90,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	send(sock, &choice, sizeof(choice), 0);
+	send(sock, &message.c_str(), strlen(message.c_str()), 0);
 	printf("Message sent\n");
 	valread = read(sock, buffer, 1024);
 	printf("%s\n", buffer);

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <map>
 // inet_addr
 #include <arpa/inet.h>
 
@@ -21,6 +22,8 @@ thread writerthreads[100];
 thread readerthreads[100];
 
 int readercount = 0;
+
+map<string, string> orders;
 
 string message = "Message";
 
