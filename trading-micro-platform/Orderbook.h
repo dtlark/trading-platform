@@ -1,6 +1,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "Order.h"
 
 using namespace std;
 
@@ -9,7 +10,7 @@ class Orderbook {
     vector<string> bids;
     vector<string> asks;
 
-    Order() {
+    Orderbook() {
         
     }
 
@@ -18,4 +19,4 @@ class Orderbook {
     void CancelOrder() {};
     void OrderStatus();
 
-}
+};

@@ -1,8 +1,10 @@
 #include <chrono>
 
+using namespace std;
+
 class Order {
 
-    int id;
+    int _id;
     bool _side;
     float _price;
     uint _currentQuantity;
@@ -10,7 +12,7 @@ class Order {
     chrono::system_clock::time_point time;
 
 public:
-    Order(uint currentQuantity, uint initialQuantity, float price, bool side) {
+    Order(int id, bool side, float price, uint curr, uint ini) : _id(id), _side(side), _price(price), _currentQuantity(curr), _initialQuantity(ini) {
         time = chrono::system_clock::now();
     };
 
@@ -20,4 +22,4 @@ public:
     bool getSide();
 
     void updateQuantity(uint quantityDelta);
-}
+};
