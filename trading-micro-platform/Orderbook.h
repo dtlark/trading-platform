@@ -1,9 +1,19 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <list>
+#include <map>
 #include "Order.h"
 
 using namespace std;
+
+bool descending(const tuple<float, uint16_t>& a, const tuple<float, uint16_t>& b) {
+    return (get<1>(a) < get<1>(b));
+}
+
+bool ascending(const tuple<float, uint16_t>& a, const tuple<float, uint16_t>& b) {
+    return (get<1>(a) > get<1>(b));
+}
 
 class Orderbook {
     struct Orders
@@ -16,7 +26,11 @@ class Orderbook {
     std::map<std::string, Orders> symbols;
     std::map<uint16_t, std::tuple<int, int, float>> info;
 
-    Orderbook() {}
+public:
+
+    Orderbook() {
+
+    }
 
     void NewOrder(uint16_t firmId, std::string symbol, char side, float price) {
         if (!symbols[symbol].firms.count(firmId)) {
