@@ -1,8 +1,10 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <queue>
 #include <list>
 #include <map>
+#include <iostream>
 #include "Order.h"
 
 using namespace std;
@@ -20,6 +22,7 @@ class Orderbook {
     {
         std::map<uint16_t, char> firms;
         std::list<std::tuple<float, uint16_t>> buys;
+        //std::priority_queue<std::tuple<float, uint16_t>, std::vector<std::tuple<float, uint16_t>>, std::less<std::tuple<float, uint16_t>>> buys;
         std::list<std::tuple<float, uint16_t>> sells;
     };
 
@@ -71,6 +74,8 @@ public:
     void ModifyOrder(uint16_t firmId, std::string symbol, float price) {
     
         if (symbols[symbol].firms.count(firmId)) {
+
+
             if (symbols[symbol].firms[firmId] == 'B') {
                 for (auto& tup : symbols[symbol].buys) { // BINARY SEARCH
                     if (std::get<1>(tup) == firmId) {
@@ -106,6 +111,7 @@ public:
                     }
                 } 
             }
+            
         }
     }
     void CancelOrder(uint16_t firmId, std::string symbol) {        
@@ -157,4 +163,12 @@ public:
         std::get<1>(info[buyer])++;
         std::get<2>(info[buyer]) -= sellPrice;
     }
+    void match() {
+
+
+    }
+
+
+
+
 };
