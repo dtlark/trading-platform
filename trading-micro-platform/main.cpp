@@ -129,8 +129,12 @@ int main() {
 
 	Orderbook orderbook = Orderbook();
 
-	orderbook.NewOrder(1001, "APPL", 'B', 1021.5);
-	orderbook.NewOrder(1002, "APPL", 'S', 1021.5);
+	for (int i = 0; i < 1000000; i++) { //1 million orders
+
+		orderbook.NewOrder(1001, "APPL", 'B', 1021.5);
+
+	}
+
 	orderbook.print();
 
 	return 0;

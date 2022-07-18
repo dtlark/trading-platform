@@ -31,11 +31,12 @@ class Orderbook {
 
 public:
 
-    Orderbook() {
-
-    }
+    Orderbook() {}
 
     void NewOrder(uint16_t firmId, std::string symbol, char side, float price) {
+
+       // Order &r = symbols[symbol];
+
         if (!symbols[symbol].firms.count(firmId)) {
             std::get<0>(info[firmId])++; 
             
