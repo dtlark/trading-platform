@@ -139,7 +139,7 @@ public:
         
         --info[buyer].open_orders;
         ++info[buyer].filled_orders;
-        info[buyer].net_funds -= sellPrice;
+        info[buyer].net_funds -= sellPrice; 
     }
     inline void match(Orders &o, uint16_t firmId, float price, std::list<std::tuple<float, uint16_t>> &side) {
 
