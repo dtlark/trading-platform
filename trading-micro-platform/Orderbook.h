@@ -1,175 +1,155 @@
-#include <map>
+#include <iostream>
 #include <string>
 #include <vector>
 #include <queue>
 #include <list>
-#include <map>
-#include <iostream>
+#include <unordered_map>
 #include "Order.h"
 
 using namespace std;
 
-bool descending(const tuple<float, uint16_t>& a, const tuple<float, uint16_t>& b) {
+/*
+Rules:
+    - Buy XOR Sell: Firm cannot have both a buy and sell order within each asset(symbol). 
+    - In a symbol, the highest buy is matched with the lowest sell assuming the buy price is >= the sell price. Sold for sell price.
+*/
+
+inline bool descending(const tuple<float, uint16_t>& a, const tuple<float, uint16_t>& b) {
     return (get<1>(a) < get<1>(b));
 }
 
-bool ascending(const tuple<float, uint16_t>& a, const tuple<float, uint16_t>& b) {
+inline bool ascending(const tuple<float, uint16_t>& a, const tuple<float, uint16_t>& b) {
     return (get<1>(a) > get<1>(b));
 }
 
 class Orderbook {
-    struct Orders
-    {
-        std::map<uint16_t, char> firms;
-        std::list<std::tuple<float, uint16_t>> buys;
-        //std::priority_queue<std::tuple<float, uint16_t>, std::vector<std::tuple<float, uint16_t>>, std::less<std::tuple<float, uint16_t>>> buys;
+    struct Orders {
+        std::unordered_map<uint16_t, char> firms;
+        std::list<std::tuple<float, uint16_t>> buys; // sorted by float
         std::list<std::tuple<float, uint16_t>> sells;
     };
+    std::unordered_map<std::string, Orders> symbols; // O(1) find
 
-    std::map<std::string, Orders> symbols;
-    std::map<uint16_t, std::tuple<int, int, float>> info;
+    struct FirmInfo {
+        int open_orders = 0;
+        int filled_orders = 0;
+        float net_funds = 0.f;
+    };
+    std::unordered_map<uint16_t, FirmInfo> info; // O(1) find
 
 public:
 
     Orderbook() {}
 
-    void NewOrder(uint16_t firmId, std::string symbol, char side, float price) {
+    inline void NewOrder(uint16_t firmId, std::string &symbol, char side, float price) {
 
-       // Order &r = symbols[symbol];
+        Orders &o = symbols[symbol]; // does not create entry in map - why?
 
-        if (!symbols[symbol].firms.count(firmId)) {
-            std::get<0>(info[firmId])++; 
+        if (o.firms.find(firmId) == o.firms.end()) {  // if firm NOT found
+            ++info[firmId].open_orders; // add to firm's open orders
             
             if(side == 'B') {
-                if (!symbols[symbol].sells.empty())  {
-                    float sellPrice = std::get<0>(symbols[symbol].sells.front());
-                    float sellFirm = std::get<1>(symbols[symbol].sells.front());
-           
-                    if(isFillable(price, sellPrice,  firmId, sellFirm)) {
-                        fill(symbols[symbol].sells, firmId, sellFirm, sellPrice, symbols[symbol].firms);
-                        return;
-                    }  
-                } 
-                //add to buy list
-                symbols[symbol].buys.push_back(std::make_tuple(price, firmId));
-                symbols[symbol].firms[firmId] = 'B';
-                symbols[symbol].buys.sort(descending);
+                match(o, firmId, price, o.sells);  // attempt to match
+                
+                // add to buy list
+                o.buys.push_back(std::make_tuple(price, firmId));
+                o.firms[firmId] = 'B';
+                o.buys.sort(descending);  // nearing O(n)
             }
             else if(side == 'S') {
-                if (!symbols[symbol].buys.empty()) {
-                    float buyPrice = std::get<0>(symbols[symbol].buys.front());
-                    float buyFirm = std::get<1>(symbols[symbol].buys.front());
-                    
-                    if(isFillable(buyPrice, price,buyFirm, firmId)) {
-                        fill(symbols[symbol].buys, buyFirm, firmId, price, symbols[symbol].firms);
-                        return;
-                    }
-                } 
-                //add to sell list
-                symbols[symbol].sells.push_back(std::make_tuple(price, firmId));
-                symbols[symbol].firms[firmId] = 'S';
-                symbols[symbol].sells.sort(ascending);
-            }
-        }
-    }
-    void ModifyOrder(uint16_t firmId, std::string symbol, float price) {
-    
-        if (symbols[symbol].firms.count(firmId)) {
-
-
-            if (symbols[symbol].firms[firmId] == 'B') {
-                for (auto& tup : symbols[symbol].buys) { // BINARY SEARCH
-                    if (std::get<1>(tup) == firmId) {
-                        std::get<0>(tup) = price;
-                        break;
-                    };
-                }
+                match(o, firmId, price, o.buys); // attempt to match
                 
-                if (!symbols[symbol].sells.empty()) {
-                    float sellPrice = std::get<0>(symbols[symbol].sells.front());
-                    float sellFirm = std::get<1>(symbols[symbol].sells.front());
-                    
-                    if(isFillable(price, sellPrice, firmId, sellFirm)) {
-                        fill(symbols[symbol].sells, firmId, sellFirm, sellPrice, symbols[symbol].firms);
-                        return;
-                    }  
-                } 
+                // add to sell list
+                o.sells.push_back(std::make_tuple(price, firmId));
+                o.firms[firmId] = 'S';
+                o.sells.sort(ascending); // nearing O(n)
             }
-            else if(symbols[symbol].firms[firmId] == 'S') {
-                for (auto& tup : symbols[symbol].sells) { // BINARY SEARCH
+        }
+    }
+    inline void ModifyOrder(uint16_t firmId, std::string &symbol, float price) {
+    
+        Orders &o = symbols[symbol];
+
+        if (o.firms.find(firmId) != o.firms.end()) { // if order IS found
+            if (o.firms[firmId] == 'B') {
+                for (auto& tup : o.buys) { // BINARY SEARCH
                     if (std::get<1>(tup) == firmId) {
                         std::get<0>(tup) = price;
                         break;
                     };
                 }
-                if (!symbols[symbol].buys.empty()) {
-                    float buyPrice = std::get<0>(symbols[symbol].buys.front());
-                    float buyFirm = std::get<1>(symbols[symbol].buys.front());
-                    
-                    if(isFillable(buyPrice, price, buyFirm, firmId)) {
-                        fill(symbols[symbol].buys, buyFirm, firmId, price, symbols[symbol].firms);
-                        return;
+                match(o, firmId, price, o.sells); // attempt to match
+            }
+            else if(o.firms[firmId] == 'S') {
+                for (auto& tup : o.sells) { // BINARY SEARCH
+                    if (std::get<1>(tup) == firmId) {
+                        std::get<0>(tup) = price;
+                        break;
+                    };
+                }
+                match(o, firmId, price, o.buys);   // attempt to match
+            }
+        }
+    }
+    inline void CancelOrder(uint16_t firmId, std::string &symbol) { 
+
+        Orders &o = symbols[symbol];
+
+        if (o.firms.find(firmId) != o.firms.end()) { // if order IS found
+            if (o.firms[firmId] == 'B') {
+                for (auto& tup : o.buys) {  
+                    if (std::get<1>(tup) == firmId) {
+                        o.buys.remove(tup);
+                        info[firmId].open_orders--;
+                        o.firms.erase(firmId);
+                        break;
                     }
-                } 
-            }
-            
-        }
-    }
-    void CancelOrder(uint16_t firmId, std::string symbol) {        
-        if (symbols[symbol].firms.count(firmId)) {
-            if (symbols[symbol].firms[firmId] == 'B') {
-                for (auto& tup : symbols[symbol].buys) { // BINARY SEARCH
-                    
-                    if (std::get<1>(tup) == firmId) {
-                        symbols[symbol].buys.remove(tup);
-                        std::get<0>(info[firmId])--;
-                        symbols[symbol].firms.erase(firmId);
-                        break;
-                    };
                 }
             }
-            else if(symbols[symbol].firms[firmId] == 'S') { // BINARY SEARCH
-                for (auto& tup : symbols[symbol].sells) {
+            else if(o.firms[firmId] == 'S') { 
+                for (auto& tup : o.sells) { 
                     if (std::get<1>(tup) == firmId) {
-                        symbols[symbol].buys.remove(tup);
-                        std::get<0>(info[firmId])--;
-                        symbols[symbol].firms.erase(firmId); 
+                        o.buys.remove(tup);
+                        info[firmId].open_orders--;
+                        o.firms.erase(firmId); 
                         break;
-                    };
+                    }
                 }
             }
         }
-    
     }
-    void print() {
+    inline void print() {
         for (auto const &pair: info) {
-            std::cout << pair.first << " " << std::get<0>(pair.second) 
-            << " " << std::get<1>(pair.second) << " " << std::get<2>(pair.second) << std::endl;
+            std::cout << pair.first << " " << pair.second.open_orders
+            << " " << pair.second.filled_orders << " " << pair.second.net_funds << std::endl;
         }
     }
-    bool isFillable(float buyPrice, float sellPrice, uint16_t buyFirm, uint16_t sellFirm) {
+    inline bool isFillable(float buyPrice, float sellPrice, uint16_t buyFirm, uint16_t sellFirm) {
         return buyPrice >= sellPrice && buyFirm != sellFirm;
     }
-    void fill(std::list<std::tuple<float, uint16_t>>& buys, uint16_t buyFirm, uint16_t sellFirm, float price, std::map<uint16_t, char>& firms) {
-        buys.pop_front();  
+    inline void fill(std::list<std::tuple<float, uint16_t>> &side, uint16_t buyFirm, uint16_t sellFirm, float price, std::unordered_map<uint16_t, char> &firms) {
+        side.pop_front();  
         updateInfo(buyFirm, sellFirm, price); 
         firms.erase(buyFirm);
     }
-    void updateInfo(uint16_t buyer, uint16_t seller, float sellPrice) {
-        std::get<0>(info[seller])--;
-        std::get<1>(info[seller])++;
-        std::get<2>(info[seller]) += sellPrice;
+    inline void updateInfo(uint16_t buyer, uint16_t seller, float sellPrice) {
+        --info[seller].open_orders;
+        ++info[seller].filled_orders;
+        info[seller].net_funds += sellPrice;
         
-        std::get<0>(info[buyer])--;
-        std::get<1>(info[buyer])++;
-        std::get<2>(info[buyer]) -= sellPrice;
+        --info[buyer].open_orders;
+        ++info[buyer].filled_orders;
+        info[buyer].net_funds -= sellPrice;
     }
-    void match() {
+    inline void match(Orders &o, uint16_t firmId, float price, std::list<std::tuple<float, uint16_t>> &side) {
 
-
+        if (!side.empty()) {
+            float xPrice = std::get<0>(side.front());
+            float xFirm = std::get<1>(side.front());
+                    
+            if(isFillable(price, xPrice, firmId, xFirm)) {
+                fill(side, firmId, xFirm, xPrice, o.firms);
+            }  
+        }
     }
-
-
-
-
 };
