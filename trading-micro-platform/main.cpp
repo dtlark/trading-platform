@@ -40,7 +40,6 @@ array<float, 1000000> pricesC;
 void data_TEST() {
 
 	vector<string> symbols = {"APPL", "ETH", "LDOS", "SPY", "QQQ"};
-	vector<float> prices = {150.0, 1200.0, 100.0, 400.0, 300.0};
 	vector<int> firms = {1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010};
 
 	srand((unsigned)time( NULL ));
