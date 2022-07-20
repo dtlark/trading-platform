@@ -3,7 +3,7 @@
 #include <map>
 // inet_addr
 #include <arpa/inet.h>
-
+#include <vector>
 #include <thread>
 #include <semaphore.h>
 #include <stdio.h>
@@ -12,6 +12,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include "Orderbook.h"
+#include <time.h>
+#include <chrono>
+#include <random>
+#include <cmath>
+
 
 using namespace std;
 
@@ -129,11 +134,39 @@ int main() {
 
 	Orderbook orderbook = Orderbook();
 
+	srand( (unsigned)time( NULL ) );
+
+	vector<string> symbols = {"APPL", "ETH", "LDOS", "SPY", "QQQ"};
+	vector<float> prices = {150.0, 1200.0, 100.0, 400.0, 300.0};
+	vector<int> firms = {1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010};
+
+	//orderbook.NewOrder(1000, "APPL", 'B', 1021.51);
+	//orderbook.NewOrder(1001, "APPL", 'B', 1021.61);
+	//orderbook.NewOrder(1002, "APPL", 'S', 1021.45);
+
+ 	auto start = chrono::steady_clock::now();
+
 	for (int i = 0; i < 1000000; i++) { //1 million orders
 
-		orderbook.NewOrder(1001, "APPL", 'B', 1021.5);
+		int firmRand = rand() % 10;
+		std::mt19937 rng(std::random_device{}());
+		bool boolRand =  std::uniform_int_distribution<>{0, 1}(rng);
 
+		char side = 'S';
+		if (boolRand) {
+			side = 'B';
+		}
+
+		orderbook.NewOrder(firms[firmRand], symbols[i%5], side, ceil((prices[i%5] + (float)rand()/RAND_MAX) * 100.0) / 100.0);
 	}
+
+	auto end = chrono::steady_clock::now();
+
+
+	cout << "Elapsed time in milliseconds: "
+        << chrono::duration_cast<chrono::milliseconds>(end - start).count()
+        << " ms" << endl;
+	
 
 	orderbook.print();
 
