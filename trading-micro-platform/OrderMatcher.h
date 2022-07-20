@@ -4,7 +4,6 @@
 #include <queue>
 #include <list>
 #include <unordered_map>
-#include "Order.h"
 
 using namespace std;
 
@@ -43,6 +42,8 @@ public:
 
     inline void NewOrder(uint16_t firmId, std::string &symbol, char side, float price) {
 
+
+
         Orders &o = symbols[symbol]; // does not create entry in map - why?
 
         if (o.firms.find(firmId) == o.firms.end()) {  // if firm NOT found
@@ -65,6 +66,8 @@ public:
                 o.sells.sort(ascending); // nearing O(n)
             }
         }
+
+        
     }
     inline void ModifyOrder(uint16_t firmId, std::string &symbol, float price) {
     
@@ -121,7 +124,7 @@ public:
     inline void print() {
         for (auto const &pair: info) {
             std::cout << pair.first << " " << pair.second.open_orders
-            << " " << pair.second.filled_orders << " " << pair.second.net_funds << std::endl;
+            << " " << pair.second.filled_orders << " " << pair.second.net_funds << '\n';
         }
     }
     inline bool isFillable(float buyPrice, float sellPrice, uint16_t buyFirm, uint16_t sellFirm) {

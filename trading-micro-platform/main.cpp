@@ -3,6 +3,7 @@
 #include <map>
 // inet_addr
 #include <arpa/inet.h>
+#include <array>
 #include <vector>
 #include <thread>
 #include <semaphore.h>
@@ -11,7 +12,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "Orderbook.h"
+#include "OrderMatcher.h"
 #include <time.h>
 #include <chrono>
 #include <random>
@@ -28,10 +29,39 @@ thread writerthreads[100];
 thread readerthreads[100];
 
 int readercount = 0;
-
 map<string, string> orders;
-
 string message = "Message";
+
+array<int, 1000000> firmsC;
+array<string, 1000000>  symbolsC; 
+array<char, 1000000> sideC; 
+array<float, 1000000> pricesC;
+
+void data_TEST() {
+
+	vector<string> symbols = {"APPL", "ETH", "LDOS", "SPY", "QQQ"};
+	vector<float> prices = {150.0, 1200.0, 100.0, 400.0, 300.0};
+	vector<int> firms = {1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010};
+
+	srand((unsigned)time( NULL ));
+
+	for (int i = 0; i < 1000000; i++) { //1 million orders
+
+		int firmRand = rand() % 10;
+		std::mt19937 rng(std::random_device{}());
+		bool boolRand =  std::uniform_int_distribution<>{0, 1}(rng);
+
+		char side = 'S';
+		if (boolRand) {
+			side = 'B';
+		}
+
+		firmsC[i] = firms[firmRand];
+		symbolsC[i] = symbols[i%5];
+		sideC[i] = side;
+		pricesC[i] = ceil((100.f + (float)rand()/RAND_MAX) * 100.0) / 100.0;
+	}
+}
 
 void* reader(int new_socket) {
 	// Lock the semaphore
@@ -129,39 +159,24 @@ int main() {
 			i = 0;
 		}
 	}
-
 	*/
 
 	Orderbook orderbook = Orderbook();
-
-	srand( (unsigned)time( NULL ) );
-
-	vector<string> symbols = {"APPL", "ETH", "LDOS", "SPY", "QQQ"};
-	vector<float> prices = {150.0, 1200.0, 100.0, 400.0, 300.0};
-	vector<int> firms = {1000, 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010};
 
 	//orderbook.NewOrder(1000, "APPL", 'B', 1021.51);
 	//orderbook.NewOrder(1001, "APPL", 'B', 1021.61);
 	//orderbook.NewOrder(1002, "APPL", 'S', 1021.45);
 
+	data_TEST();
+
  	auto start = chrono::steady_clock::now();
 
-	for (int i = 0; i < 1000000; i++) { //1 million orders
+	for (int j = 0; j < 1000000; j++) { //1 million orders
 
-		int firmRand = rand() % 10;
-		std::mt19937 rng(std::random_device{}());
-		bool boolRand =  std::uniform_int_distribution<>{0, 1}(rng);
-
-		char side = 'S';
-		if (boolRand) {
-			side = 'B';
-		}
-
-		orderbook.NewOrder(firms[firmRand], symbols[i%5], side, ceil((prices[i%5] + (float)rand()/RAND_MAX) * 100.0) / 100.0);
+		orderbook.NewOrder(firmsC[j], symbolsC[j], sideC[j], pricesC[j]);	
 	}
 
 	auto end = chrono::steady_clock::now();
-
 
 	cout << "Elapsed time in milliseconds: "
         << chrono::duration_cast<chrono::milliseconds>(end - start).count()
